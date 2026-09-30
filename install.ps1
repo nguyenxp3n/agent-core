@@ -5,8 +5,13 @@
 #   .\install.ps1 -Targets "1,2"
 
 param (
-    [string]$Targets = ""
+    [string]$Targets = "",
+    [switch]$All
 )
+
+if ($All) {
+    $Targets = "6"
+}
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $ErrorActionPreference = "Stop"

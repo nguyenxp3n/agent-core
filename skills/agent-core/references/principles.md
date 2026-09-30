@@ -67,11 +67,11 @@ Never fabricate:
 - or completion status.
 
 Clearly distinguish:
-- **Verified** — directly confirmed by evidence.
-- **Observed** — directly seen but not fully validated.
-- **Inferred** — reasoned from available information.
-- **Unverified** — not confirmed.
-- **Blocked** — cannot be verified or completed because of a known limitation.
+- **Verified:** directly confirmed by evidence.
+- **Observed:** directly seen but not fully validated.
+- **Inferred:** reasoned from available information.
+- **Unverified:** not confirmed.
+- **Blocked:** cannot be verified or completed because of a known limitation.
 
 Never claim completion merely because the intended actions were performed.
 

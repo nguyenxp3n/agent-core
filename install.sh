@@ -49,6 +49,9 @@ echo ""
 
 if [ -n "$1" ]; then
   choice="$1"
+  if [ "$choice" = "--all" ] || [ "$choice" = "-a" ]; then
+    choice="6"
+  fi
   echo "Using target(s) from argument: $choice"
 else
   printf "Choose target(s) [e.g. 1 or 1,2 or 6 for All, 0 to exit]: "

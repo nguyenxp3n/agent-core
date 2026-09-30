@@ -191,7 +191,7 @@ Do not omit known limitations merely to appear complete.
 
 When the user explicitly requests final audit, e.g.:
 
-> "Audit kiểm duyệt đảm bảo chất lượng lần cuối — hãy tìm lỗi ngay."
+> "Audit kiểm duyệt đảm bảo chất lượng lần cuối, hãy tìm lỗi ngay."
 
 interpret it as **active defect search**, not mere confirmation.
 

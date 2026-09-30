@@ -119,7 +119,7 @@ Before claiming:
 - check omissions/regressions,
 - identify unverified areas.
 
-If meaningful uncertainty remains, route through `universal-verification`.
+If meaningful uncertainty remains, route through Part 3: Verification (see [verification.md](verification.md)).
 
 ## 10. Completion Handoff
 

@@ -1,0 +1,40 @@
+name: Verify Skill Framework and Installers
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate bash installer syntax
+        run: |
+          bash -n install.sh
+
+      - name: Validate PowerShell installer syntax
+        shell: pwsh
+        run: |
+          $errors = $null
+          $null = [System.Management.Automation.Language.Parser]::ParseFile("install.ps1", [ref]$null, [ref]$errors)
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_ }
+            exit 1
+          }
+
+      - name: Verify skill file tree integrity
+        run: |
+          test -f skills/agent-core/SKILL.md
+          test -f skills/agent-core/references/principles.md
+          test -f skills/agent-core/references/execution.md
+          test -f skills/agent-core/references/verification.md
+
+      - name: Test bash installer in workspace mode
+        run: |
+          bash install.sh 5
