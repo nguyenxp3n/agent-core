@@ -36,6 +36,7 @@ jobs:
           test -f skills/agent-core/references/verification.md
           test -f mcp/server.js
           test -f mcp/package.json
+          test -f mcp/test.js
           test -f integrations/chatgpt/openapi.yaml
           test -f integrations/chatgpt/instructions.md
           test -f .claude-plugin/marketplace.json
@@ -49,6 +50,10 @@ jobs:
       - name: Validate MCP server syntax
         run: |
           node -c mcp/server.js
+
+      - name: Run MCP integration test suite
+        run: |
+          node mcp/test.js
 
       - name: Validate OpenAPI YAML syntax
         run: |

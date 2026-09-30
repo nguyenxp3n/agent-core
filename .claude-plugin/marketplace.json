@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "agent-core",
-  "description": "Universal behavioral and execution framework plugins for AI agents",
+  "description": "Behavioral and verification framework for AI coding and software engineering agents",
   "owner": {
     "name": "Hoang Chiem Nguyen",
     "email": "nguyenxp3n@users.noreply.github.com"
@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "agent-core",
-      "description": "Universal behavioral and execution framework: think before acting, surgical changes, active defect audit, and evidence-backed verification.",
+      "description": "Behavioral and verification framework for AI coding agents: think before acting, surgical changes, active defect hunting, and direct execution verification.",
       "author": {
         "name": "Hoang Chiem Nguyen",
         "email": "nguyenxp3n@users.noreply.github.com"

@@ -1,6 +1,6 @@
 # Agent Core
 
-Agent Core is a modular specification and operational framework for AI coding agents. It defines how agents should think, execute multi-step work, and verify outcomes with direct evidence before claiming a task is done.
+Agent Core is a behavioral and verification framework for AI coding and software engineering agents. It defines how agents think, execute multi-step modifications, and verify outcomes with direct execution evidence before claiming a task is complete.
 
 Agent Core is available in two complementary formats:
 1. **As an interactive Skill:** Directly usable by Claude Code, OpenAI Codex, Google Gemini, and Cursor.
@@ -54,13 +54,15 @@ Selection options:
 
 ## The problem it addresses
 
-AI agents often report success because they ran a tool, modified a file, or generated plausible code. But running a command is not the same as verifying that the code compiles, the tests pass, or the requested behavior actually works.
+AI coding agents often declare success because they ran a tool, edited a file, or generated plausible-looking syntax. Running a command is not the same as verifying that code compiles, unit tests pass, or requirements are met.
 
-Agent Core establishes explicit boundaries to prevent:
-* Unverified completion claims ("done" without verification).
-* Hallucinated tools, files, or test outputs.
-* Unnecessary complexity and scope creep.
-* Speculative fixes stacked on top of broken state.
+Agent Core establishes explicit behavioral gates to prevent:
+* Unverified completion claims ("task finished" without execution proof).
+* Hallucinated tools, file paths, or test outputs.
+* Unnecessary complexity, scope creep, and speculative code changes.
+* Broken state compounded by uncheckpointed iterations.
+
+---
 
 ## Repository structure
 
@@ -71,7 +73,8 @@ agent-core/
 ├── install.ps1
 ├── mcp/
 │   ├── package.json
-│   └── server.js
+│   ├── server.js
+│   └── test.js
 ├── integrations/
 │   └── chatgpt/
 │       ├── openapi.yaml
@@ -87,12 +90,13 @@ agent-core/
 
 | Component | Path | Focus |
 |---|---|---|
-| Master Skill | `skills/agent-core/SKILL.md` | Core orchestrator coordinating all three phases |
-| MCP Plugin Server | `mcp/server.js` | Zero-dependency MCP server providing callable tools |
+| Master Skill | `skills/agent-core/SKILL.md` | Lean router coordinating progressive disclosure |
+| MCP Plugin Server | `mcp/server.js` | Zero-dependency Active Verification Engine |
+| Integration Tests | `mcp/test.js` | End-to-end JSON-RPC suite validating protocol and verification gates |
 | ChatGPT Integration | `integrations/chatgpt/` | OpenAPI 3.1.0 schema and Custom GPT instructions |
-| Part 1: Principles | `skills/agent-core/references/principles.md` | Baseline behavioral discipline and cognitive rules |
-| Part 2: Execution | `skills/agent-core/references/execution.md` | Eight-phase loop for non-trivial engineering tasks |
-| Part 3: Verification | `skills/agent-core/references/verification.md` | Active bug hunting, evidence hierarchy, and final audit |
+| Module 1: Principles | `skills/agent-core/references/principles.md` | Cognitive discipline, surgical edits, and zero fabrication |
+| Module 2: Execution | `skills/agent-core/references/execution.md` | Eight-phase loop, non-destructive patch snapshots, and recovery |
+| Module 3: Verification | `skills/agent-core/references/verification.md` | Active defect hunting, live command checks, and evidence hierarchy |
 
 ---
 
@@ -102,15 +106,15 @@ When running as an MCP server, Agent Core exposes 5 callable tools to your AI as
 
 | Tool Name | Purpose |
 |---|---|
-| `get_principles` | Retrieve core cognitive principles (thinking, simplicity, surgical changes, zero fabrication). |
+| `get_principles` | Retrieve core cognitive principles (thinking first, simplicity, surgical changes, zero fabrication). |
 | `create_execution_plan` | Generate an eight-phase execution checklist for a specific goal and constraints. |
-| `create_checkpoint` | Create a safety recovery point (git stash/commit) prior to risky code modifications. |
+| `create_checkpoint` | Create a non-destructive patch snapshot (`.agent-core/checkpoints/`) without modifying the working tree. |
 | `run_audit` | Generate an active defect-hunting checklist to uncover regressions and edge-case errors. |
-| `verify_outcome` | Evaluate completion claims against execution evidence, classifying into PASS, FAIL, PARTIAL, or UNVERIFIED. |
+| `verify_outcome` | Active verification engine. Executes live shell commands or inspects artifacts on disk; rejects unverified text claims. |
 
 ### Connecting to Claude Desktop manually
 
-If you prefer configuring Claude Desktop manually rather than using the installer, add the following entry to your `claude_desktop_config.json`:
+Add the following entry to your `claude_desktop_config.json`:
 
 * **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
 * **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
@@ -135,23 +139,34 @@ You can use Agent Core with ChatGPT in two ways:
 
 ---
 
-## One framework, three integrated parts
+## Automated Verification Suite
 
-### Part 1: Principles (`references/principles.md`)
+Agent Core includes an automated behavioral integration test suite (`mcp/test.js`) that validates protocol compliance, tool registration, live command execution, artifact inspection, and rejection of unverified verbal claims:
 
-This part governs baseline cognitive discipline for every task:
+```bash
+node mcp/test.js
+```
 
+The test suite runs with zero third-party dependencies directly on Node.js 18+ and is integrated into GitHub Actions CI (`.github/workflows/verify.yml`).
+
+---
+
+## Three Integrated Modules
+
+### Module 1: Principles (`references/principles.md`)
+
+Governs baseline engineering discipline:
 * **Think before acting:** Inspect workspace files and context first. Clarify ambiguous constraints rather than guessing.
 * **Simplicity first:** Pick the most direct solution that satisfies the goal. Avoid premature abstractions and unnecessary dependencies.
 * **Surgical changes:** Touch only what is required. Preserve existing conventions, formatting, and surrounding code.
 * **Goal-driven execution:** Define observable criteria for success before writing code.
 * **Zero fabrication:** Never invent facts, tool runs, or test results. Distinguish between directly verified facts and inferences.
-* **Preserve user intent:** Follow the user's constraints and explicit scope instead of replacing them with a personal preference.
-* **Verify before completion:** A task is complete only when verified by tangible evidence.
+* **Preserve user intent:** Follow user constraints and explicit scope instead of substituting personal preference.
+* **Verify before completion:** A task is complete only when confirmed by tangible evidence.
 
-### Part 2: Universal Execution (`references/execution.md`)
+### Module 2: Execution (`references/execution.md`)
 
-A structured workflow designed for complex or multi-step engineering tasks:
+A structured workflow designed for multi-step software engineering tasks:
 
 ```text
 Understand -> Inspect -> Define Success -> Plan -> Execute -> Checkpoint -> Validate -> Complete
@@ -159,11 +174,11 @@ Understand -> Inspect -> Define Success -> Plan -> Execute -> Checkpoint -> Vali
 
 Key practices:
 * **Pre-flight inspection:** Review dependencies, file layouts, and configuration before editing.
-* **Checkpoints:** Create recoverable points (commits, stashes, or file backups) before risky or destructive operations.
+* **Non-destructive checkpoints:** Create recoverable patch snapshots prior to risky or destructive operations.
 * **Continuous validation:** Test milestones as they are completed rather than deferring all validation to the end.
 * **Failure recovery:** When a change causes a regression, stop immediately and roll back to the last known-good checkpoint before attempting a revised solution.
 
-### Part 3: Universal Verification (`references/verification.md`)
+### Module 3: Verification (`references/verification.md`)
 
 An active audit cycle to prove results before declaring completion:
 
@@ -176,7 +191,9 @@ Key practices:
 * **Fix and re-audit:** When a defect is resolved, the agent re-audits related components to ensure the fix did not introduce secondary regressions.
 * **Circuit breaker:** If an issue remains unresolved after three corrective cycles, the agent stops and reports the blockers to the user instead of spinning indefinitely.
 
-## Evidence hierarchy
+---
+
+## Evidence Hierarchy
 
 Agent Core defines three levels of evidence. Higher levels take precedence:
 
@@ -186,18 +203,22 @@ Agent Core defines three levels of evidence. Higher levels take precedence:
 
 Agents must not rely on weak evidence when strong evidence can be obtained through available tools.
 
-## Verification status definitions
+---
+
+## Verification Status Definitions
 
 When reporting completion, outcomes must be classified into one of four states:
 
 | Status | Definition |
 |---|---|
-| `PASS` | Requirement verified through direct evidence. |
+| `PASS` | Requirement verified through direct execution or artifact evidence. |
 | `FAIL` | Requirement tested and failed to satisfy criteria. |
-| `PARTIAL` | Some criteria verified, but parts of the requirement remain incomplete. |
+| `PARTIAL` | Some criteria verified, but parts of the requirement remain incomplete or contain stubs. |
 | `UNVERIFIED` | Tooling or context was insufficient to confirm the result. |
 
 Uncertainty or lack of test tooling must be reported as `UNVERIFIED`, never promoted to `PASS`.
+
+---
 
 ## License
 

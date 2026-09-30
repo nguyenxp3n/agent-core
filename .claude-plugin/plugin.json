@@ -1,7 +1,7 @@
 {
   "name": "agent-core",
-  "version": "1.0.0",
-  "description": "Universal behavioral and execution framework for AI agents to think before acting, make surgical changes, and verify results with evidence.",
+  "version": "1.1.0",
+  "description": "Behavioral and verification framework for AI coding agents: think before acting, surgical changes, active defect hunting, and direct execution verification.",
   "author": {
     "name": "Hoang Chiem Nguyen",
     "email": "nguyenxp3n@users.noreply.github.com"

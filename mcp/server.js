@@ -3,6 +3,7 @@
  * Agent Core: Model Context Protocol (MCP) Server
  *
  * Implements the standard MCP JSON-RPC 2.0 protocol over stdio.
+ * Active Verification Engine for AI Coding & Software Engineering Agents.
  * Zero external dependencies, runs directly on Node.js 18+.
  */
 
@@ -12,13 +13,8 @@ const readline = require('readline');
 const { execSync } = require('child_process');
 
 const SERVER_NAME = 'agent-core';
-const SERVER_VERSION = '1.0.0';
+const SERVER_VERSION = '1.1.0';
 const PROTOCOL_VERSION = '2024-11-05';
-
-// Resolve reference files relative to script location
-const REPO_ROOT = path.resolve(__dirname, '..');
-const SKILLS_DIR = path.join(REPO_ROOT, 'skills', 'agent-core');
-const REFS_DIR = path.join(SKILLS_DIR, 'references');
 
 function readReference(name) {
   const candidates = [
@@ -43,7 +39,7 @@ function readReference(name) {
 const TOOLS = [
   {
     name: 'get_principles',
-    description: 'Retrieve Agent Core universal behavioral principles to guide thinking, avoid hallucinations, enforce surgical changes, and preserve user intent.',
+    description: 'Retrieve Agent Core behavioral principles to guide thinking, avoid hallucinations, enforce surgical changes, and preserve user intent.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -56,7 +52,7 @@ const TOOLS = [
   },
   {
     name: 'create_execution_plan',
-    description: 'Generate a structured 8-phase execution plan (Understand, Inspect, Define Success, Plan, Execute, Checkpoint, Validate, Complete) for a complex task.',
+    description: 'Generate an eight-phase execution checklist (Understand, Inspect, Define Success, Plan, Execute, Checkpoint, Validate, Complete) for a software engineering task.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -74,7 +70,7 @@ const TOOLS = [
   },
   {
     name: 'create_checkpoint',
-    description: 'Create a safety checkpoint (git commit, stash, or snapshot) before executing risky or destructive modifications.',
+    description: 'Create a non-destructive safety snapshot patch before executing risky or destructive code modifications. Does NOT stash or disrupt working tree.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -84,7 +80,7 @@ const TOOLS = [
         },
         target_path: {
           type: 'string',
-          description: 'Optional working directory to create checkpoint in. Defaults to current directory.'
+          description: 'Optional directory path to checkpoint. Defaults to current directory.'
         }
       },
       required: ['name']
@@ -92,7 +88,7 @@ const TOOLS = [
   },
   {
     name: 'run_audit',
-    description: 'Run an active defect search across recent changes or artifacts to find regressions, broken edge cases, and missing requirements.',
+    description: 'Generate an active defect-hunting checklist to uncover regressions, edge cases, and unverified completion claims.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -103,7 +99,7 @@ const TOOLS = [
         checklist: {
           type: 'array',
           items: { type: 'string' },
-          description: 'Specific criteria to actively challenge and verify.'
+          description: 'Optional specific criteria to actively challenge.'
         }
       },
       required: ['scope']
@@ -111,7 +107,7 @@ const TOOLS = [
   },
   {
     name: 'verify_outcome',
-    description: 'Evaluate completion claims against direct evidence and classify outcome into PASS, FAIL, PARTIAL, or UNVERIFIED.',
+    description: 'Active verification engine. Executes real commands (tests/builds) or inspects artifacts on disk. Rejects unverified text claims without execution proof.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -119,12 +115,24 @@ const TOOLS = [
           type: 'string',
           description: 'The specific requirement or acceptance criterion being verified.'
         },
+        command: {
+          type: 'string',
+          description: 'Live shell command to execute for direct proof (e.g. npm test, pytest, cargo test, node script.js).'
+        },
+        file_path: {
+          type: 'string',
+          description: 'Artifact file path to inspect on disk (verifies file exists, size > 0, and scans for placeholder patterns).'
+        },
+        cwd: {
+          type: 'string',
+          description: 'Optional working directory for command execution.'
+        },
         evidence: {
           type: 'string',
-          description: 'Direct command logs, test outputs, compiler results, or file diffs.'
+          description: 'Supplemental text notes. Note: text alone without command or file_path yields UNVERIFIED.'
         }
       },
-      required: ['requirement', 'evidence']
+      required: ['requirement']
     }
   }
 ];
@@ -155,12 +163,12 @@ function handleCreateExecutionPlan(args) {
   const goal = args.goal;
   const constraints = args.constraints || 'None specified';
   
-  return `# Agent Core Execution Plan: ${goal}
+  return `# Execution Plan: ${goal}
 
-## Constraints and Scope
+## Constraints & Scope
 ${constraints}
 
-## Eight-Phase Execution Loop
+## Eight-Phase Loop
 - [ ] 1. Understand: Confirm user intent and required deliverables.
 - [ ] 2. Inspect: Check existing workspace, dependencies, and git state.
 - [ ] 3. Define Success: Map requirements to observable, testable criteria.
@@ -170,27 +178,36 @@ ${constraints}
 - [ ] 7. Validate: Run tests and inspect outputs after milestones.
 - [ ] 8. Complete: Verify all success criteria with direct evidence.
 
-## Failure Recovery Rule
+## Recovery Rule
 If a regression occurs: STOP -> Roll back to checkpoint -> Reassess diagnosis -> Apply revised fix.`;
 }
 
 function handleCreateCheckpoint(args) {
-  const name = args.name;
-  const targetDir = args.target_path || process.cwd();
-  
+  const name = (args && args.name ? args.name.trim() : 'checkpoint');
+  const targetDir = (args && args.target_path ? path.resolve(args.target_path) : process.cwd());
+  const sanitized = name.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40);
+  const timestamp = Date.now();
+  const checkpointDir = path.join(targetDir, '.agent-core', 'checkpoints');
+
   try {
+    fs.mkdirSync(checkpointDir, { recursive: true });
     const isGit = fs.existsSync(path.join(targetDir, '.git'));
     if (isGit) {
-      const status = execSync('git status --porcelain', { cwd: targetDir, encoding: 'utf8' }).trim();
-      if (!status) {
-        return `Checkpoint "${name}": Working tree is already clean. Head commit is ready as recovery point.`;
+      const diffOutput = execSync('git diff HEAD', { cwd: targetDir, encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 });
+      const patchFile = path.join(checkpointDir, `${sanitized}-${timestamp}.patch`);
+      if (diffOutput.trim()) {
+        fs.writeFileSync(patchFile, diffOutput, 'utf8');
+        return `Non-destructive checkpoint "${name}" created successfully.\n- Patch snapshot saved: ${patchFile}\n- Working tree was NOT modified.\n- To restore this checkpoint: git apply "${patchFile}"`;
+      } else {
+        return `Checkpoint "${name}": Working tree is already clean (HEAD matches working directory). No uncommitted diffs to capture.`;
       }
-      execSync(`git stash push -m "checkpoint: ${name}"`, { cwd: targetDir, encoding: 'utf8' });
-      return `Checkpoint "${name}": Stashed uncommitted changes cleanly as recovery checkpoint.`;
+    } else {
+      const noteFile = path.join(checkpointDir, `${sanitized}-${timestamp}.json`);
+      fs.writeFileSync(noteFile, JSON.stringify({ name, timestamp, targetDir }, null, 2), 'utf8');
+      return `Checkpoint "${name}" noted in non-git directory: ${noteFile}`;
     }
-    return `Checkpoint "${name}": Recorded safety checkpoint at ${new Date().toISOString()} for ${targetDir}.`;
   } catch (err) {
-    return `Checkpoint "${name}": Safety checkpoint noted (git stash check: ${err.message}).`;
+    return `Checkpoint creation note: ${err.message}`;
   }
 }
 
@@ -198,7 +215,7 @@ function handleRunAudit(args) {
   const scope = args.scope;
   const items = args.checklist || [
     'Are there any unhandled errors or missing edge cases?',
-    'Did changes introduce broken imports or syntax regressions?',
+    'Did changes introduce broken imports, syntax errors, or regressions?',
     'Do actual outputs match 100% of user constraints?',
     'Are all claims backed by execution evidence rather than assumptions?'
   ];
@@ -213,37 +230,107 @@ function handleRunAudit(args) {
 
 function handleVerifyOutcome(args) {
   const req = args.requirement;
-  const evidence = (args.evidence || '').trim();
-  const lower = evidence.toLowerCase();
+  const command = args.command ? args.command.trim() : null;
+  const filePath = args.file_path ? args.file_path.trim() : null;
+  const evidenceText = args.evidence ? args.evidence.trim() : null;
 
-  let status = 'UNVERIFIED';
-  let reasoning = 'Insufficient evidence provided.';
-
-  if (!evidence) {
-    status = 'UNVERIFIED';
-    reasoning = 'No execution or artifact evidence provided.';
-  } else {
-    const isZeroFailed = /0\s+(errors?|failed|failures?)/.test(lower);
-    const hasFailKeywords = /\b(error:|fatal:|failed|exception|traceback|exit code [1-9])\b/.test(lower);
-    const hasSuccessKeywords = /\b(pass|passed|success|successful|exit code 0)\b/.test(lower);
-
-    if (hasFailKeywords && !isZeroFailed) {
-      status = 'FAIL';
-      reasoning = 'Execution logs or test outputs indicate a failure or error.';
-    } else if (hasSuccessKeywords || isZeroFailed) {
-      status = 'PASS';
-      reasoning = 'Direct execution evidence confirms requirement criteria.';
-    } else if (evidence.length > 30) {
-      status = 'PARTIAL';
-      reasoning = 'Evidence provided but lacks explicit pass or exit code confirmation.';
+  // Case 1: Live Command Execution Verification
+  if (command) {
+    const cwd = args.cwd ? path.resolve(args.cwd) : process.cwd();
+    const startTime = Date.now();
+    try {
+      const output = execSync(command, {
+        cwd: cwd,
+        encoding: 'utf8',
+        timeout: 20000,
+        stdio: ['pipe', 'pipe', 'pipe']
+      });
+      const duration = Date.now() - startTime;
+      return JSON.stringify({
+        requirement: req,
+        status: 'PASS',
+        verification_method: 'live_command_execution',
+        command: command,
+        exit_code: 0,
+        duration_ms: duration,
+        evidence: (output || '(Command completed with exit code 0 and no output)').slice(0, 1000),
+        reasoning: 'Command executed directly by Agent Core MCP server and terminated with exit code 0.'
+      }, null, 2);
+    } catch (err) {
+      const duration = Date.now() - startTime;
+      const stdout = err.stdout ? err.stdout.toString() : '';
+      const stderr = err.stderr ? err.stderr.toString() : '';
+      const exitCode = err.status !== undefined ? err.status : 1;
+      return JSON.stringify({
+        requirement: req,
+        status: 'FAIL',
+        verification_method: 'live_command_execution',
+        command: command,
+        exit_code: exitCode,
+        duration_ms: duration,
+        error_output: (stderr || stdout || err.message).slice(0, 1000),
+        reasoning: `Command failed with exit code ${exitCode}. Direct execution disproved completion claim.`
+      }, null, 2);
     }
   }
 
+  // Case 2: Artifact Integrity Verification
+  if (filePath) {
+    const resolvedPath = path.resolve(filePath);
+    if (!fs.existsSync(resolvedPath)) {
+      return JSON.stringify({
+        requirement: req,
+        status: 'FAIL',
+        verification_method: 'artifact_integrity_check',
+        file_path: resolvedPath,
+        reasoning: `Target artifact does not exist on disk at ${resolvedPath}. Completion claim rejected.`
+      }, null, 2);
+    }
+
+    const stats = fs.statSync(resolvedPath);
+    if (stats.size === 0) {
+      return JSON.stringify({
+        requirement: req,
+        status: 'FAIL',
+        verification_method: 'artifact_integrity_check',
+        file_path: resolvedPath,
+        reasoning: 'Target artifact exists but is 0 bytes (empty file). Completion claim rejected.'
+      }, null, 2);
+    }
+
+    // Inspect content for placeholder patterns (comments or stubs indicating incomplete work)
+    const content = fs.readFileSync(resolvedPath, 'utf8');
+    const stubPattern = /\b(TODO|FIXME|XXX|REPLACE_ME|INSERT_CODE_HERE|NOT_YET_IMPLEMENTED)\b/;
+    const stubMatch = content.match(stubPattern);
+    if (stubMatch) {
+      return JSON.stringify({
+        requirement: req,
+        status: 'PARTIAL',
+        verification_method: 'artifact_integrity_check',
+        file_path: resolvedPath,
+        size_bytes: stats.size,
+        warning: `Detected placeholder string: "${stubMatch[0]}"`,
+        reasoning: 'File exists with content, but contains placeholder patterns indicating incomplete work.'
+      }, null, 2);
+    }
+
+    return JSON.stringify({
+      requirement: req,
+      status: 'PASS',
+      verification_method: 'artifact_integrity_check',
+      file_path: resolvedPath,
+      size_bytes: stats.size,
+      reasoning: 'Artifact verified on filesystem: exists, non-empty, and free of placeholder patterns.'
+    }, null, 2);
+  }
+
+  // Case 3: Only text provided without verification vector
   return JSON.stringify({
     requirement: req,
-    status: status,
-    reasoning: reasoning,
-    evidence_snippet: evidence.slice(0, 300)
+    status: 'UNVERIFIED',
+    verification_method: 'unverified_text_assertion',
+    reasoning: 'Text claims alone cannot verify outcome. Provide "command" to execute a live test runner or "file_path" to verify artifact on disk.',
+    provided_text: evidenceText ? evidenceText.slice(0, 200) : null
   }, null, 2);
 }
 
@@ -274,7 +361,6 @@ function processRequest(msg) {
   }
 
   if (method === 'notifications/initialized') {
-    // Notification: no response required
     return null;
   }
 
@@ -404,11 +490,11 @@ function processRequest(msg) {
         prompts: [
           {
             name: 'agent-core-session',
-            description: 'Start an autonomous coding or engineering session enforcing Agent Core principles.'
+            description: 'Start an autonomous coding session enforcing Agent Core principles.'
           },
           {
             name: 'agent-core-audit',
-            description: 'Perform an exhaustive active audit on the current task or pull request.'
+            description: 'Perform an active audit on recent software engineering changes.'
           }
         ]
       }
@@ -428,7 +514,7 @@ function processRequest(msg) {
               role: 'user',
               content: {
                 type: 'text',
-                text: 'Begin task following Agent Core principles: think before acting, surgical changes, and evidence-based verification before completion.'
+                text: 'Begin coding task following Agent Core principles: think before acting, surgical changes, and evidence-based verification before completion.'
               }
             }
           ]
@@ -455,7 +541,6 @@ function processRequest(msg) {
     }
   }
 
-  // Method not handled
   return {
     jsonrpc: '2.0',
     id: id,
