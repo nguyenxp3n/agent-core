@@ -2,6 +2,8 @@
 
 Agent Core is a modular specification and operational framework for AI coding agents. It defines how agents should think, execute multi-step work, and verify outcomes with direct evidence before claiming a task is done.
 
+Instead of fragmenting rules across disconnected skills, Agent Core packages three foundational phases (Principles, Execution, and Verification) into a single cohesive skill named `agent-core`.
+
 ## The problem it addresses
 
 AI agents often report success because they ran a tool, modified a file, or generated plausible code. But running a command is not the same as verifying that the code compiles, the tests pass, or the requested behavior actually works.
@@ -14,41 +16,42 @@ Agent Core establishes explicit boundaries to prevent:
 
 ## Repository structure
 
-The repository contains three foundational layers located in the `skills/` directory:
+The repository contains one primary skill (`agent-core`) with a central orchestrator file and three reference guides:
 
 ```text
 agent-core/
 ├── README.md
 └── skills/
-    ├── principles/
-    │   └── AGENTS.md
-    ├── universal-execution/
-    │   └── SKILL.md
-    └── universal-verification/
-        └── SKILL.md
+    └── agent-core/
+        ├── SKILL.md
+        └── references/
+            ├── principles.md
+            ├── execution.md
+            └── verification.md
 ```
 
 | Component | Path | Focus |
 |---|---|---|
-| Principles | `skills/principles/AGENTS.md` | Core behavioral rules and thinking discipline |
-| Universal Execution | `skills/universal-execution/SKILL.md` | Step-by-step loop for non-trivial tasks |
-| Universal Verification | `skills/universal-verification/SKILL.md` | Evidence collection, active bug hunting, and final audit |
+| Master Skill | `skills/agent-core/SKILL.md` | Core orchestrator coordinating all three phases |
+| Part 1: Principles | `skills/agent-core/references/principles.md` | Baseline behavioral discipline and cognitive rules |
+| Part 2: Execution | `skills/agent-core/references/execution.md` | Eight-phase loop for non-trivial engineering tasks |
+| Part 3: Verification | `skills/agent-core/references/verification.md` | Active bug hunting, evidence hierarchy, and final audit |
 
-## The three layers
+## One skill, three integrated parts
 
-### 1. Principles (`skills/principles/AGENTS.md`)
+### Part 1: Principles (`references/principles.md`)
 
-This layer governs the agent's baseline mindset. It applies to every task regardless of domain.
+This part governs baseline cognitive discipline for every task:
 
-* **Think before acting:** Inspect the actual workspace and existing code first. Clarify ambiguous constraints rather than inventing requirements.
+* **Think before acting:** Inspect workspace files and context first. Clarify ambiguous constraints rather than guessing.
 * **Simplicity first:** Pick the most direct solution that satisfies the goal. Avoid premature abstractions and unnecessary dependencies.
 * **Surgical changes:** Touch only what is required. Preserve existing conventions, formatting, and surrounding code.
 * **Goal-driven execution:** Define observable criteria for success before writing code.
-* **Honesty and transparency:** Never invent facts, tool runs, or test results. Distinguish between what was directly verified and what is merely inferred.
+* **Zero fabrication:** Never invent facts, tool runs, or test results. Distinguish between directly verified facts and inferences.
 * **Preserve user intent:** Follow the user's constraints and explicit scope instead of replacing them with a personal preference.
-* **Verify before completion:** A task is complete only when verified by evidence.
+* **Verify before completion:** A task is complete only when verified by tangible evidence.
 
-### 2. Universal Execution (`skills/universal-execution/SKILL.md`)
+### Part 2: Universal Execution (`references/execution.md`)
 
 A structured workflow designed for complex or multi-step engineering tasks:
 
@@ -56,21 +59,21 @@ A structured workflow designed for complex or multi-step engineering tasks:
 Understand -> Inspect -> Define Success -> Plan -> Execute -> Checkpoint -> Validate -> Complete
 ```
 
-Key practices defined in this layer:
+Key practices defined in this phase:
 * **Pre-flight inspection:** Review dependencies, file layouts, and configuration before editing.
 * **Checkpoints:** Create recoverable points (commits, stashes, or file backups) before risky or destructive operations.
 * **Continuous validation:** Test milestones as they are completed rather than deferring all validation to the end.
 * **Failure recovery:** When a change causes a regression, stop immediately and roll back to the last known-good checkpoint before attempting a revised solution.
 
-### 3. Universal Verification (`skills/universal-verification/SKILL.md`)
+### Part 3: Universal Verification (`references/verification.md`)
 
-This layer defines how agents must prove their results through an active audit cycle:
+An active audit cycle to prove results before declaring completion:
 
 ```text
 Requirements -> Inspect Actual Result -> Find Issues -> Fix -> Verify -> Re-audit -> Report
 ```
 
-Key rules:
+Key practices defined in this phase:
 * **Active error search:** Instead of seeking confirmation bias, the agent actively looks for broken edge cases, missing requirements, regressions, and unintended file edits.
 * **Fix and re-audit:** When a defect is resolved, the agent re-audits related components to ensure the fix did not introduce secondary regressions.
 * **Circuit breaker:** If an issue remains unresolved after three corrective cycles, the agent stops and reports the blockers to the user instead of spinning indefinitely.
@@ -98,20 +101,31 @@ When reporting completion, outcomes must be classified into one of four states:
 
 Uncertainty or lack of test tooling must be reported as `UNVERIFIED`, never promoted to `PASS`.
 
-## How to adopt Agent Core
+## How to adopt the agent-core skill
 
 Agent Core is vendor-neutral and works with any modern AI coding assistant or autonomous agent framework.
 
 ### Claude Code
 
-Point your project instructions to the skills directory in your `CLAUDE.md`:
+Copy the skill to your project or global Claude skills folder:
+
+```bash
+cp -r skills/agent-core ~/.claude/skills/
+```
+
+Or reference it directly from your `CLAUDE.md`:
 
 ```markdown
 # Agent Guidelines
-Before executing tasks, follow the principles and workflows defined in:
-- skills/principles/AGENTS.md
-- skills/universal-execution/SKILL.md
-- skills/universal-verification/SKILL.md
+Follow the agent-core skill workflow defined in skills/agent-core/SKILL.md.
+```
+
+### Antigravity and Gemini CLI
+
+Install the skill into your Gemini skills configuration:
+
+```powershell
+Copy-Item -Recurse skills/agent-core ~/.gemini/config/skills/
 ```
 
 ### Cursor
@@ -119,25 +133,15 @@ Before executing tasks, follow the principles and workflows defined in:
 Add Agent Core to your `.cursorrules` or `.cursor/rules/agent-core.mdc`:
 
 ```markdown
-Read and apply the rules in skills/principles/AGENTS.md for all code modifications.
-For multi-step refactoring, follow skills/universal-execution/SKILL.md.
-Before reporting completion, run the verification workflow in skills/universal-verification/SKILL.md.
+Apply the agent-core framework from skills/agent-core/SKILL.md for all tasks:
+1. Follow Part 1 (Principles) for code modifications.
+2. Follow Part 2 (Execution) for multi-step planning.
+3. Follow Part 3 (Verification) before declaring completion.
 ```
 
-### Antigravity and Gemini CLI
+### ChatGPT and custom agent pipelines
 
-Copy or link the skill folders directly into your active skills configuration:
-
-```powershell
-Copy-Item -Recurse skills/* ~/.gemini/config/skills/
-```
-
-### Custom agent runtimes
-
-Include the markdown files as system context, or inject them as tool definitions in your agent's system prompt:
-* Use `skills/principles/AGENTS.md` as the system prompt foundation.
-* Attach `skills/universal-execution/SKILL.md` as the task planning guide.
-* Trigger `skills/universal-verification/SKILL.md` during the evaluation and handoff step.
+Include `skills/agent-core/SKILL.md` as the core operational prompt in your system instructions or agent runtime context.
 
 ## License
 
