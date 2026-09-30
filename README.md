@@ -4,6 +4,50 @@ Agent Core is a modular specification and operational framework for AI coding ag
 
 Instead of fragmenting rules across disconnected skills, Agent Core packages three foundational phases (Principles, Execution, and Verification) into a single cohesive skill named `agent-core`.
 
+## Quick install via terminal
+
+Run the one-line installer for your operating system. The installer automatically scans your system, detects installed AI agent environments, and lets you choose where to install:
+
+### Linux, macOS, and WSL
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/nguyenxp3n/agent-core/main/install.sh | bash
+```
+
+### Windows (PowerShell)
+
+```powershell
+irm https://raw.githubusercontent.com/nguyenxp3n/agent-core/main/install.ps1 | iex
+```
+
+### Interactive selection
+
+When executed in your terminal, the installer presents an interactive menu:
+
+```text
+======================================================
+             AGENT-CORE SKILL INSTALLER               
+======================================================
+Scanning system for AI Agent environments...
+
+  [1] Claude Code            ~/.claude/skills/agent-core          [Detected]
+  [2] OpenAI Codex           ~/.codex/skills/agent-core           [Detected]
+  [3] Google Gemini / AGY    ~/.gemini/config/skills/agent-core   [Detected]
+  [4] Cursor Rules           ~/.cursor/rules/agent-core          
+  [5] Current Workspace      ./skills/agent-core                  [Detected]
+  [6] All detected environments
+  [0] Exit
+
+Choose target(s) [e.g. 1 or 1,2 or 6 for All, 0 to exit]:
+```
+
+Selection options:
+* Single environment: enter `1` to install to Claude Code only.
+* Multiple environments: enter comma-separated numbers like `1, 2` to install to both Claude and Codex.
+* All detected: enter `6` to install across all detected environments at once.
+
+---
+
 ## The problem it addresses
 
 AI agents often report success because they ran a tool, modified a file, or generated plausible code. But running a command is not the same as verifying that the code compiles, the tests pass, or the requested behavior actually works.
@@ -21,6 +65,8 @@ The repository contains one primary skill (`agent-core`) with a central orchestr
 ```text
 agent-core/
 ├── README.md
+├── install.sh
+├── install.ps1
 └── skills/
     └── agent-core/
         ├── SKILL.md
@@ -101,9 +147,9 @@ When reporting completion, outcomes must be classified into one of four states:
 
 Uncertainty or lack of test tooling must be reported as `UNVERIFIED`, never promoted to `PASS`.
 
-## How to adopt the agent-core skill
+## Manual adoption
 
-Agent Core is vendor-neutral and works with any modern AI coding assistant or autonomous agent framework.
+If you prefer manual setup rather than the one-line installer:
 
 ### Claude Code
 
