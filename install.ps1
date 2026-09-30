@@ -10,7 +10,7 @@ param (
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $ErrorActionPreference = "Stop"
-$REPO_URL = "https://raw.githubusercontent.com/nguyenxp3n/agent-core/main"
+$REPO_URL = "https://raw.githubusercontent.com/nguyenxp3n/agent-core/refs/heads/main"
 $FILES = @(
     "skills/agent-core/SKILL.md",
     "skills/agent-core/references/principles.md",

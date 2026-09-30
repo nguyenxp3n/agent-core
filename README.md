@@ -11,13 +11,13 @@ Run the one-line installer for your operating system. The installer automaticall
 ### Linux, macOS, and WSL
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/nguyenxp3n/agent-core/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/nguyenxp3n/agent-core/refs/heads/main/install.sh | bash
 ```
 
 ### Windows (PowerShell)
 
 ```powershell
-irm https://raw.githubusercontent.com/nguyenxp3n/agent-core/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/nguyenxp3n/agent-core/refs/heads/main/install.ps1 | iex
 ```
 
 ### Interactive selection
