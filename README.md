@@ -1,263 +1,143 @@
 # Agent Core
 
-> A universal, evidence-driven framework for AI agents to execute work, verify results, and avoid unsupported completion claims.
+Agent Core is a modular specification and operational framework for AI coding agents. It defines how agents should think, execute multi-step work, and verify outcomes with direct evidence before claiming a task is done.
 
-**Agent Core** is a vendor-neutral foundation for AI agents working across coding, research, documents, presentations, data, media, analysis, and other multi-step tasks.
+## The problem it addresses
 
-It separates **behavioral principles**, **execution workflow**, and **verification/audit** into reusable components that can be adapted to different AI systems and agent environments.
+AI agents often report success because they ran a tool, modified a file, or generated plausible code. But running a command is not the same as verifying that the code compiles, the tests pass, or the requested behavior actually works.
 
-## Why Agent Core?
+Agent Core establishes explicit boundaries to prevent:
+* Unverified completion claims ("done" without verification).
+* Hallucinated tools, files, or test outputs.
+* Unnecessary complexity and scope creep.
+* Speculative fixes stacked on top of broken state.
 
-AI agents can perform requested actions while still producing incomplete, incorrect, or insufficiently verified results.
+## Repository structure
 
-Agent Core addresses this with:
-
-> **Do the work → inspect the actual result → actively search for problems → verify with evidence → only then report completion.**
-
-## Architecture
+The repository contains three foundational layers located in the `skills/` directory:
 
 ```text
 agent-core/
 ├── README.md
-├── IMPLEMENTATION_PLAN.md
-├── IMPLEMENTATION_PROMPT.md
-│
 └── skills/
     ├── principles/
     │   └── AGENTS.md
     ├── universal-execution/
     │   └── SKILL.md
-    ├── universal-verification/
-    │   └── SKILL.md
-    └── universal-terminal/
+    └── universal-verification/
         └── SKILL.md
 ```
 
-| Component | Purpose |
+| Component | Path | Focus |
+|---|---|---|
+| Principles | `skills/principles/AGENTS.md` | Core behavioral rules and thinking discipline |
+| Universal Execution | `skills/universal-execution/SKILL.md` | Step-by-step loop for non-trivial tasks |
+| Universal Verification | `skills/universal-verification/SKILL.md` | Evidence collection, active bug hunting, and final audit |
+
+## The three layers
+
+### 1. Principles (`skills/principles/AGENTS.md`)
+
+This layer governs the agent's baseline mindset. It applies to every task regardless of domain.
+
+* **Think before acting:** Inspect the actual workspace and existing code first. Clarify ambiguous constraints rather than inventing requirements.
+* **Simplicity first:** Pick the most direct solution that satisfies the goal. Avoid premature abstractions and unnecessary dependencies.
+* **Surgical changes:** Touch only what is required. Preserve existing conventions, formatting, and surrounding code.
+* **Goal-driven execution:** Define observable criteria for success before writing code.
+* **Honesty and transparency:** Never invent facts, tool runs, or test results. Distinguish between what was directly verified and what is merely inferred.
+* **Preserve user intent:** Follow the user's constraints and explicit scope instead of replacing them with a personal preference.
+* **Verify before completion:** A task is complete only when verified by evidence.
+
+### 2. Universal Execution (`skills/universal-execution/SKILL.md`)
+
+A structured workflow designed for complex or multi-step engineering tasks:
+
+```text
+Understand -> Inspect -> Define Success -> Plan -> Execute -> Checkpoint -> Validate -> Complete
+```
+
+Key practices defined in this layer:
+* **Pre-flight inspection:** Review dependencies, file layouts, and configuration before editing.
+* **Checkpoints:** Create recoverable points (commits, stashes, or file backups) before risky or destructive operations.
+* **Continuous validation:** Test milestones as they are completed rather than deferring all validation to the end.
+* **Failure recovery:** When a change causes a regression, stop immediately and roll back to the last known-good checkpoint before attempting a revised solution.
+
+### 3. Universal Verification (`skills/universal-verification/SKILL.md`)
+
+This layer defines how agents must prove their results through an active audit cycle:
+
+```text
+Requirements -> Inspect Actual Result -> Find Issues -> Fix -> Verify -> Re-audit -> Report
+```
+
+Key rules:
+* **Active error search:** Instead of seeking confirmation bias, the agent actively looks for broken edge cases, missing requirements, regressions, and unintended file edits.
+* **Fix and re-audit:** When a defect is resolved, the agent re-audits related components to ensure the fix did not introduce secondary regressions.
+* **Circuit breaker:** If an issue remains unresolved after three corrective cycles, the agent stops and reports the blockers to the user instead of spinning indefinitely.
+
+## Evidence hierarchy
+
+Agent Core defines three levels of evidence. Higher levels take precedence:
+
+* **Strong:** Direct command execution output, build logs, passing test suites, file diffs, and visual verification of rendered artifacts.
+* **Medium:** Static analysis, lint checks, type checks, and schema validation.
+* **Weak:** Plausibility, static reasoning alone, or assertions like "the logic looks sound."
+
+Agents must not rely on weak evidence when strong evidence can be obtained through available tools.
+
+## Verification status definitions
+
+When reporting completion, outcomes must be classified into one of four states:
+
+| Status | Definition |
 |---|---|
-| `README.md` | Project entry point and documentation |
-| `IMPLEMENTATION_PLAN.md` | Technical implementation specification |
-| `IMPLEMENTATION_PROMPT.md` | Prompt for an AI agent to implement the project |
-| `skills/principles/` | Universal behavioral principles |
-| `skills/universal-execution/` | Workflow for non-trivial work |
-| `skills/universal-verification/` | Final verification and audit |
-| `skills/universal-terminal/` | Controlled local terminal workflow |
+| `PASS` | Requirement verified through direct evidence. |
+| `FAIL` | Requirement tested and failed to satisfy criteria. |
+| `PARTIAL` | Some criteria verified, but parts of the requirement remain incomplete. |
+| `UNVERIFIED` | Tooling or context was insufficient to confirm the result. |
 
-## Three Layers
+Uncertainty or lack of test tooling must be reported as `UNVERIFIED`, never promoted to `PASS`.
 
-```text
-PRINCIPLES
-How should the agent behave?
-        ↓
-EXECUTION
-How should the agent perform the work?
-        ↓
-VERIFICATION
-How does the agent prove the result?
+## How to adopt Agent Core
+
+Agent Core is vendor-neutral and works with any modern AI coding assistant or autonomous agent framework.
+
+### Claude Code
+
+Point your project instructions to the skills directory in your `CLAUDE.md`:
+
+```markdown
+# Agent Guidelines
+Before executing tasks, follow the principles and workflows defined in:
+- skills/principles/AGENTS.md
+- skills/universal-execution/SKILL.md
+- skills/universal-verification/SKILL.md
 ```
 
-### Principles
+### Cursor
 
-Universal behavior: think before acting, simplicity, surgical changes, honesty, preserve user intent, verify before completion.
+Add Agent Core to your `.cursorrules` or `.cursor/rules/agent-core.mdc`:
 
-See [`skills/principles/AGENTS.md`](skills/principles/AGENTS.md).
-
-### Universal Execution
-
-```text
-Understand → Inspect → Define Success → Plan
-→ Execute → Checkpoint → Validate → Complete
+```markdown
+Read and apply the rules in skills/principles/AGENTS.md for all code modifications.
+For multi-step refactoring, follow skills/universal-execution/SKILL.md.
+Before reporting completion, run the verification workflow in skills/universal-verification/SKILL.md.
 ```
 
-See [`skills/universal-execution/SKILL.md`](skills/universal-execution/SKILL.md).
+### Antigravity and Gemini CLI
 
-### Universal Verification
+Copy or link the skill folders directly into your active skills configuration:
 
-```text
-Requirements → Inspect Actual Result → Find Issues
-→ Fix → Verify → Re-audit → Report
+```powershell
+Copy-Item -Recurse skills/* ~/.gemini/config/skills/
 ```
 
-See [`skills/universal-verification/SKILL.md`](skills/universal-verification/SKILL.md).
+### Custom agent runtimes
 
-### Universal Terminal
-
-Defines how an AI agent should request and interpret local terminal execution through a controlled runtime/MCP layer.
-
-See [`skills/universal-terminal/SKILL.md`](skills/universal-terminal/SKILL.md).
-
-## Read Order for AI Agents
-
-```text
-README.md
-    ↓
-skills/principles/AGENTS.md
-    ↓
-skills/universal-execution/SKILL.md
-    ↓
-skills/universal-verification/SKILL.md
-    ↓
-skills/universal-terminal/SKILL.md
-```
-
-For implementation work, additionally read:
-
-```text
-IMPLEMENTATION_PLAN.md
-IMPLEMENTATION_PROMPT.md
-```
-
-## Completion Is Not the Same as Action
-
-```text
-Performed actions ≠ Verified outcome
-```
-
-Examples:
-
-```text
-"Code was changed"        ≠ "Application works"
-"Tests were written"      ≠ "Tests pass"
-"Slides were generated"   ≠ "Slides were visually verified"
-"File was exported"       ≠ "Exported artifact is correct"
-```
-
-## Evidence Strength
-
-**Strong**
-- Direct execution results
-- Build/test results
-- Actual rendered/exported artifacts
-- Diff/version comparison
-- External source-of-truth confirmation
-
-**Medium**
-- Static analysis
-- Lint/schema validation
-- Preview inspection
-- Requirement cross-checking
-
-**Weak**
-- Reasoning alone
-- "Looks correct"
-- Agent assertion
-- Previous unverified assumptions
-
-Weak evidence must not be presented as proof when stronger verification is reasonably available.
-
-## Active Audit
-
-When the user explicitly asks for a final audit, such as:
-
-> **"Audit kiểm duyệt đảm bảo chất lượng lần cuối — hãy tìm lỗi ngay."**
-
-the agent must actively search for defects rather than merely confirm success:
-
-```text
-ASSUME NOTHING
-→ INSPECT
-→ CHALLENGE
-→ FIND
-→ FIX
-→ VERIFY
-→ RE-AUDIT
-→ REPORT
-```
-
-Look for missing requirements, incorrect values, broken behavior, regressions, inconsistencies, formatting/layout problems, unintended changes, unsupported claims, edge cases, and stale/conflicting information.
-
-## Verification Status
-
-| Status | Meaning |
-|---|---|
-| `PASS` | Verified and satisfied |
-| `FAIL` | Verified and not satisfied |
-| `PARTIAL` | Partially satisfied |
-| `UNVERIFIED` | Insufficient evidence |
-
-Do not convert `UNVERIFIED` into `PASS` by reasoning alone.
-
-## Recovery
-
-For risky state-changing work, establish a recoverable checkpoint when practical.
-
-If a regression occurs:
-
-```text
-STOP
-→ Identify regression
-→ Rollback/recover when practical
-→ Reassess
-→ Fix
-→ Verify
-```
-
-For the same unresolved issue, prefer no more than approximately three corrective cycles before escalation unless new evidence materially changes the diagnosis.
-
-## Universal by Design
-
-The framework is intentionally vendor-neutral and can be adapted to:
-
-- Claude / Claude Code
-- ChatGPT / Apps
-- Gemini / Gemini CLI
-- Codex
-- Cursor
-- Kiro
-- OpenCode
-- Other agent environments
-
-The reusable core is the workflow and behavioral contract, not a vendor-specific API.
-
-## Implementation
-
-The repository is designed to evolve toward:
-
-```text
-AI Client
-    ↓
-MCP
-    ↓
-Local Agent
-    ↓
-Permission Layer
-    ↓
-Local Tools / Terminal
-```
-
-See [`IMPLEMENTATION_PLAN.md`](IMPLEMENTATION_PLAN.md) for the build plan and [`IMPLEMENTATION_PROMPT.md`](IMPLEMENTATION_PROMPT.md) for the agent implementation prompt.
-
-## Future Structure
-
-```text
-agent-core/
-├── README.md
-├── IMPLEMENTATION_PLAN.md
-├── IMPLEMENTATION_PROMPT.md
-│
-├── skills/
-│   ├── principles/
-│   ├── universal-execution/
-│   ├── universal-verification/
-│   ├── universal-terminal/
-│   └── ...
-│
-├── runtime/
-│   └── local-agent/
-│
-├── mcp/
-│   └── server/
-│
-├── adapters/
-│   ├── claude/
-│   ├── gemini/
-│   ├── codex/
-│   └── chatgpt/
-│
-└── scripts/
-    ├── install.sh
-    └── install.ps1
-```
+Include the markdown files as system context, or inject them as tool definitions in your agent's system prompt:
+* Use `skills/principles/AGENTS.md` as the system prompt foundation.
+* Attach `skills/universal-execution/SKILL.md` as the task planning guide.
+* Trigger `skills/universal-verification/SKILL.md` during the evaluation and handoff step.
 
 ## License
 
