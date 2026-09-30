@@ -1,8 +1,9 @@
-# Agent Core - Skill Installer for Windows (PowerShell)
+# Agent Core - Skill & Plugin Installer for Windows (PowerShell)
 # Usage:
-#   irm https://raw.githubusercontent.com/nguyenxp3n/agent-core/main/install.ps1 | iex
+#   irm https://raw.githubusercontent.com/nguyenxp3n/agent-core/refs/heads/main/install.ps1 | iex
 # Or with target parameter:
 #   .\install.ps1 -Targets "1,2"
+#   .\install.ps1 -All
 
 param (
     [string]$Targets = "",
@@ -10,14 +11,21 @@ param (
 )
 
 if ($All) {
-    $Targets = "6"
+    $Targets = "7"
 }
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $ErrorActionPreference = "Stop"
 $REPO_URL = "https://raw.githubusercontent.com/nguyenxp3n/agent-core/refs/heads/main"
-$FILES = @(
+$SKILL_FILES = @(
     "skills/agent-core/SKILL.md",
+    "skills/agent-core/references/principles.md",
+    "skills/agent-core/references/execution.md",
+    "skills/agent-core/references/verification.md"
+)
+$MCP_FILES = @(
+    "mcp/server.js",
+    "mcp/package.json",
     "skills/agent-core/references/principles.md",
     "skills/agent-core/references/execution.md",
     "skills/agent-core/references/verification.md"
@@ -31,38 +39,50 @@ $AGENTS = @(
         Name = "Claude Code"
         Path = Join-Path $HOME_DIR ".claude\skills\agent-core"
         DetectPath = Join-Path $HOME_DIR ".claude"
+        Type = "skill"
     },
     @{
         Id = "2"
         Name = "OpenAI Codex"
         Path = Join-Path $HOME_DIR ".codex\skills\agent-core"
         DetectPath = Join-Path $HOME_DIR ".codex"
+        Type = "skill"
     },
     @{
         Id = "3"
         Name = "Google Gemini / AGY"
         Path = Join-Path $HOME_DIR ".gemini\config\skills\agent-core"
         DetectPath = Join-Path $HOME_DIR ".gemini"
+        Type = "skill"
     },
     @{
         Id = "4"
         Name = "Cursor Rules"
         Path = Join-Path $HOME_DIR ".cursor\rules\agent-core"
         DetectPath = Join-Path $HOME_DIR ".cursor"
+        Type = "skill"
     },
     @{
         Id = "5"
         Name = "Current Workspace"
         Path = ".\skills\agent-core"
         DetectPath = "."
+        Type = "skill"
+    },
+    @{
+        Id = "6"
+        Name = "Claude Desktop (MCP)"
+        Path = Join-Path $HOME_DIR ".agent-core\mcp"
+        DetectPath = Join-Path $env:APPDATA "Claude"
+        Type = "mcp"
     }
 )
 
 Write-Host ""
 Write-Host "======================================================" -ForegroundColor Cyan
-Write-Host "             AGENT-CORE SKILL INSTALLER               " -ForegroundColor Cyan
+Write-Host "          AGENT-CORE SKILL & PLUGIN INSTALLER         " -ForegroundColor Cyan
 Write-Host "======================================================" -ForegroundColor Cyan
-Write-Host "Scanning system for AI Agent environments..." -ForegroundColor Gray
+Write-Host "Scanning system for AI Agent & Client environments..." -ForegroundColor Gray
 Write-Host ""
 
 $detectedCount = 0
@@ -77,17 +97,17 @@ foreach ($agent in $AGENTS) {
     $tagColor = if ($exists) { "Green" } else { "DarkGray" }
     
     Write-Host "  [$($agent.Id)] " -NoNewline -ForegroundColor Yellow
-    Write-Host "$($agent.Name.PadRight(22)) " -NoNewline -ForegroundColor White
-    Write-Host "$($agent.Path.PadRight(45)) " -NoNewline -ForegroundColor DarkGray
+    Write-Host "$($agent.Name.PadRight(24)) " -NoNewline -ForegroundColor White
+    Write-Host "$($agent.Path.PadRight(43)) " -NoNewline -ForegroundColor DarkGray
     Write-Host $tag -ForegroundColor $tagColor
 }
 
-Write-Host "  [6] All detected environments" -ForegroundColor Yellow
+Write-Host "  [7] All detected environments" -ForegroundColor Yellow
 Write-Host "  [0] Exit" -ForegroundColor Red
 Write-Host ""
 
 if ([string]::IsNullOrWhiteSpace($Targets)) {
-    $choice = Read-Host "Choose target(s) [e.g. 1 or 1,2 or 6 for All, 0 to exit]"
+    $choice = Read-Host "Choose target(s) [e.g. 1 or 1,2 or 7 for All, 0 to exit]"
 } else {
     $choice = $Targets
     Write-Host "Using target(s) from arguments: $choice" -ForegroundColor Gray
@@ -100,7 +120,7 @@ if ([string]::IsNullOrWhiteSpace($choice) -or $choice.Trim() -eq "0") {
 
 # Parse selected IDs
 $selectedIds = @()
-if ($choice.Trim() -eq "6" -or $choice.Trim().ToLower() -eq "all") {
+if ($choice.Trim() -eq "7" -or $choice.Trim().ToLower() -eq "all") {
     foreach ($agent in $AGENTS) {
         if ($agent.Detected -and $agent.Id -ne "5") {
             $selectedIds += $agent.Id
@@ -113,7 +133,7 @@ if ($choice.Trim() -eq "6" -or $choice.Trim().ToLower() -eq "all") {
     $rawTokens = $choice -split "[,;\s]+"
     foreach ($t in $rawTokens) {
         $clean = $t.Trim()
-        if ($clean -match "^[1-5]$") {
+        if ($clean -match "^[1-6]$") {
             if (-not ($selectedIds -contains $clean)) {
                 $selectedIds += $clean
             }
@@ -127,7 +147,7 @@ if ($selectedIds.Count -eq 0) {
 }
 
 Write-Host ""
-Write-Host "Installing agent-core skill to $($selectedIds.Count) target(s)..." -ForegroundColor Cyan
+Write-Host "Installing Agent Core to $($selectedIds.Count) target(s)..." -ForegroundColor Cyan
 Write-Host ""
 
 $localSource = $false
@@ -144,13 +164,18 @@ foreach ($id in $selectedIds) {
     if (-not $targetAgent) { continue }
     
     $destRoot = $targetAgent.Path
-    Write-Host "Installing to $($targetAgent.Name): $destRoot" -ForegroundColor White
+    Write-Host "Installing to $($targetAgent.Name)..." -ForegroundColor White
     
-    $null = New-Item -ItemType Directory -Path (Join-Path $destRoot "references") -Force
+    $fileList = if ($targetAgent.Type -eq "mcp") { $MCP_FILES } else { $SKILL_FILES }
+    $prefix = if ($targetAgent.Type -eq "mcp") { "" } else { "skills/agent-core/" }
     
     $allOk = $true
-    foreach ($relFile in $FILES) {
-        $fileName = $relFile -replace "^skills/agent-core/", ""
+    foreach ($relFile in $fileList) {
+        $fileName = if ($targetAgent.Type -eq "mcp") {
+            $relFile -replace "^(skills/agent-core/|mcp/)", ""
+        } else {
+            $relFile -replace "^skills/agent-core/", ""
+        }
         $destPath = Join-Path $destRoot $fileName
         
         $destDir = Split-Path -Parent $destPath
@@ -162,7 +187,7 @@ foreach ($id in $selectedIds) {
             if ($localSource) {
                 $sourcePath = Join-Path $scriptDir $relFile
                 if ((Test-Path $destPath) -and (Test-Path $sourcePath) -and ((Resolve-Path $destPath).Path -eq (Resolve-Path $sourcePath).Path)) {
-                    # File is identical source path, already in place
+                    # identical path
                 } else {
                     Copy-Item $sourcePath -Destination $destPath -Force
                 }
@@ -171,15 +196,46 @@ foreach ($id in $selectedIds) {
                 Invoke-RestMethod -Uri $url -OutFile $destPath
             }
             
-            if ((Test-Path $destPath) -and (Get-Item $destPath).Length -gt 0) {
-                # verified
-            } else {
+            if (-not ((Test-Path $destPath) -and (Get-Item $destPath).Length -gt 0)) {
                 $allOk = $false
                 Write-Host "  x Failed to verify $fileName" -ForegroundColor Red
             }
         } catch {
             $allOk = $false
             Write-Host "  x Error writing $fileName : $_" -ForegroundColor Red
+        }
+    }
+    
+    # If target is Claude Desktop MCP, register into claude_desktop_config.json
+    if ($targetAgent.Type -eq "mcp") {
+        try {
+            $configPath = Join-Path $env:APPDATA "Claude\claude_desktop_config.json"
+            $configDir = Split-Path -Parent $configPath
+            if (-not (Test-Path $configDir)) {
+                $null = New-Item -ItemType Directory -Path $configDir -Force
+            }
+            
+            $cfg = @{}
+            if (Test-Path $configPath) {
+                try {
+                    $jsonStr = Get-Content $configPath -Raw
+                    if ($jsonStr.Trim()) { $cfg = $jsonStr | ConvertFrom-Json -AsHashtable }
+                } catch {}
+            }
+            if (-not $cfg["mcpServers"]) {
+                $cfg["mcpServers"] = @{}
+            }
+            
+            $serverJsPath = (Join-Path $destRoot "server.js").Replace("\", "/")
+            $cfg["mcpServers"]["agent-core"] = @{
+                command = "node"
+                args = @($serverJsPath)
+            }
+            
+            $cfg | ConvertTo-Json -Depth 10 | Set-Content $configPath -Encoding UTF8
+            Write-Host "  [OK] Registered MCP server in $configPath" -ForegroundColor Green
+        } catch {
+            Write-Host "  [WARN] Could not update Claude Desktop config: $_" -ForegroundColor Yellow
         }
     }
     
@@ -191,6 +247,6 @@ foreach ($id in $selectedIds) {
 }
 
 Write-Host ""
-Write-Host "Done! agent-core skill is ready to use." -ForegroundColor Green
-Write-Host "Restart or refresh your AI assistant to load the new skill." -ForegroundColor Gray
+Write-Host "Done! Agent Core is ready to use." -ForegroundColor Green
+Write-Host "Restart or refresh your AI assistant / Claude Desktop to load changes." -ForegroundColor Gray
 Write-Host ""

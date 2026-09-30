@@ -1,0 +1,127 @@
+openapi: 3.1.0
+info:
+  title: Agent Core API
+  description: Universal behavioral and execution framework for AI agents to plan, execute, and verify outcomes with evidence.
+  version: 1.0.0
+servers:
+  - url: https://api.agent-core.local/v1
+    description: Local or hosted Agent Core instance
+paths:
+  /principles:
+    get:
+      operationId: getPrinciples
+      summary: Retrieve Agent Core universal behavioral principles
+      parameters:
+        - name: focus_area
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [thinking, simplicity, surgical, honesty, verification]
+          description: Focus area to filter principles
+      responses:
+        '200':
+          description: Core behavioral principles
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  principles:
+                    type: array
+                    items:
+                      type: string
+
+  /execution-plan:
+    post:
+      operationId: createExecutionPlan
+      summary: Generate an eight-phase execution plan for non-trivial engineering tasks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [goal]
+              properties:
+                goal:
+                  type: string
+                  description: The user goal or task description
+                constraints:
+                  type: string
+                  description: Known constraints or scope boundaries
+      responses:
+        '200':
+          description: Generated eight-phase execution plan
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plan:
+                    type: string
+
+  /audit:
+    post:
+      operationId: runActiveAudit
+      summary: Run an active defect search to find regressions, edge cases, and missing requirements
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [scope]
+              properties:
+                scope:
+                  type: string
+                  description: Scope of changes to audit
+                checklist:
+                  type: array
+                  items:
+                    type: string
+                  description: Custom verification checklist
+      responses:
+        '200':
+          description: Active audit checklist and questions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  audit_report:
+                    type: string
+
+  /verify:
+    post:
+      operationId: verifyOutcome
+      summary: Classify completion claims against tangible evidence into PASS, FAIL, PARTIAL, or UNVERIFIED
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [requirement, evidence]
+              properties:
+                requirement:
+                  type: string
+                  description: Requirement being tested
+                evidence:
+                  type: string
+                  description: Direct test logs, command outputs, or diff evidence
+      responses:
+        '200':
+          description: Verification classification result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  requirement:
+                    type: string
+                  status:
+                    type: string
+                    enum: [PASS, FAIL, PARTIAL, UNVERIFIED]
+                  reasoning:
+                    type: string

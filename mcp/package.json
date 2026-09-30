@@ -1,0 +1,27 @@
+{
+  "name": "agent-core-mcp",
+  "version": "1.0.0",
+  "description": "Model Context Protocol (MCP) server for Agent Core framework",
+  "main": "server.js",
+  "bin": {
+    "agent-core-mcp": "./server.js"
+  },
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "agent-core",
+    "claude",
+    "chatgpt",
+    "ai-agent",
+    "cursor"
+  ],
+  "author": "Hoang Chiem Nguyen",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -34,6 +34,18 @@ jobs:
           test -f skills/agent-core/references/principles.md
           test -f skills/agent-core/references/execution.md
           test -f skills/agent-core/references/verification.md
+          test -f mcp/server.js
+          test -f mcp/package.json
+          test -f integrations/chatgpt/openapi.yaml
+          test -f integrations/chatgpt/instructions.md
+
+      - name: Validate MCP server syntax
+        run: |
+          node -c mcp/server.js
+
+      - name: Validate OpenAPI YAML syntax
+        run: |
+          python3 -c "import yaml; yaml.safe_load(open('integrations/chatgpt/openapi.yaml'))"
 
       - name: Test bash installer in workspace mode
         run: |

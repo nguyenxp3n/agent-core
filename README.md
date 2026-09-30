@@ -2,11 +2,13 @@
 
 Agent Core is a modular specification and operational framework for AI coding agents. It defines how agents should think, execute multi-step work, and verify outcomes with direct evidence before claiming a task is done.
 
-Instead of fragmenting rules across disconnected skills, Agent Core packages three foundational phases (Principles, Execution, and Verification) into a single cohesive skill named `agent-core`.
+Agent Core is available in two complementary formats:
+1. **As an interactive Skill:** Directly usable by Claude Code, OpenAI Codex, Google Gemini, and Cursor.
+2. **As an MCP Server Plugin:** Callable by Claude Desktop, Cursor, and ChatGPT via Model Context Protocol (MCP) and Custom GPT Actions.
 
 ## Quick install via terminal
 
-Run the one-line installer for your operating system. The installer automatically scans your system, detects installed AI agent environments, and lets you choose where to install:
+Run the one-line installer for your operating system. The installer scans your system, detects active AI environments, and lets you choose where to install:
 
 ### Linux, macOS, and WSL
 
@@ -20,31 +22,33 @@ curl -fsSL https://raw.githubusercontent.com/nguyenxp3n/agent-core/refs/heads/ma
 irm https://raw.githubusercontent.com/nguyenxp3n/agent-core/refs/heads/main/install.ps1 | iex
 ```
 
-### Interactive selection
+### Interactive selection menu
 
-When executed in your terminal, the installer presents an interactive menu:
+When executed in your terminal, the installer detects which agents and apps are present on your machine:
 
 ```text
 ======================================================
-             AGENT-CORE SKILL INSTALLER               
+          AGENT-CORE SKILL & PLUGIN INSTALLER         
 ======================================================
-Scanning system for AI Agent environments...
+Scanning system for AI Agent & Client environments...
 
-  [1] Claude Code            ~/.claude/skills/agent-core          [Detected]
-  [2] OpenAI Codex           ~/.codex/skills/agent-core           [Detected]
-  [3] Google Gemini / AGY    ~/.gemini/config/skills/agent-core   [Detected]
-  [4] Cursor Rules           ~/.cursor/rules/agent-core          
-  [5] Current Workspace      ./skills/agent-core                  [Detected]
-  [6] All detected environments
+  [1] Claude Code              ~/.claude/skills/agent-core          [Detected]
+  [2] OpenAI Codex             ~/.codex/skills/agent-core           [Detected]
+  [3] Google Gemini / AGY      ~/.gemini/config/skills/agent-core   [Detected]
+  [4] Cursor Rules             ~/.cursor/rules/agent-core          
+  [5] Current Workspace        ./skills/agent-core                  [Detected]
+  [6] Claude Desktop (MCP)     ~/.agent-core/mcp                    [Detected]
+  [7] All detected environments
   [0] Exit
 
-Choose target(s) [e.g. 1 or 1,2 or 6 for All, 0 to exit]:
+Choose target(s) [e.g. 1 or 1,2 or 7 for All, 0 to exit]:
 ```
 
 Selection options:
-* Single environment: enter `1` to install to Claude Code only.
-* Multiple environments: enter comma-separated numbers like `1, 2` to install to both Claude and Codex.
-* All detected: enter `6` to install across all detected environments at once.
+* Single target: enter `1` to install to Claude Code only.
+* Multiple targets: enter comma-separated numbers like `1, 2` to install to both Claude Code and Codex.
+* Claude Desktop Plugin: enter `6` to configure the MCP server into your Claude Desktop configuration automatically.
+* All detected: enter `7` to install across all detected environments at once.
 
 ---
 
@@ -60,13 +64,18 @@ Agent Core establishes explicit boundaries to prevent:
 
 ## Repository structure
 
-The repository contains one primary skill (`agent-core`) with a central orchestrator file and three reference guides:
-
 ```text
 agent-core/
 ├── README.md
 ├── install.sh
 ├── install.ps1
+├── mcp/
+│   ├── package.json
+│   └── server.js
+├── integrations/
+│   └── chatgpt/
+│       ├── openapi.yaml
+│       └── instructions.md
 └── skills/
     └── agent-core/
         ├── SKILL.md
@@ -79,11 +88,54 @@ agent-core/
 | Component | Path | Focus |
 |---|---|---|
 | Master Skill | `skills/agent-core/SKILL.md` | Core orchestrator coordinating all three phases |
+| MCP Plugin Server | `mcp/server.js` | Zero-dependency MCP server providing callable tools |
+| ChatGPT Integration | `integrations/chatgpt/` | OpenAPI 3.1.0 schema and Custom GPT instructions |
 | Part 1: Principles | `skills/agent-core/references/principles.md` | Baseline behavioral discipline and cognitive rules |
 | Part 2: Execution | `skills/agent-core/references/execution.md` | Eight-phase loop for non-trivial engineering tasks |
 | Part 3: Verification | `skills/agent-core/references/verification.md` | Active bug hunting, evidence hierarchy, and final audit |
 
-## One skill, three integrated parts
+---
+
+## MCP Server and Plugin Tools
+
+When running as an MCP server, Agent Core exposes 5 callable tools to your AI assistant:
+
+| Tool Name | Purpose |
+|---|---|
+| `get_principles` | Retrieve core cognitive principles (thinking, simplicity, surgical changes, zero fabrication). |
+| `create_execution_plan` | Generate an eight-phase execution checklist for a specific goal and constraints. |
+| `create_checkpoint` | Create a safety recovery point (git stash/commit) prior to risky code modifications. |
+| `run_audit` | Generate an active defect-hunting checklist to uncover regressions and edge-case errors. |
+| `verify_outcome` | Evaluate completion claims against execution evidence, classifying into PASS, FAIL, PARTIAL, or UNVERIFIED. |
+
+### Connecting to Claude Desktop manually
+
+If you prefer configuring Claude Desktop manually rather than using the installer, add the following entry to your `claude_desktop_config.json`:
+
+* **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+* **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "agent-core": {
+      "command": "node",
+      "args": ["<path-to-repo>/mcp/server.js"]
+    }
+  }
+}
+```
+
+### Connecting to ChatGPT
+
+You can use Agent Core with ChatGPT in two ways:
+
+1. **Custom GPT:** Create a Custom GPT on ChatGPT using the pre-configured prompt in [integrations/chatgpt/instructions.md](integrations/chatgpt/instructions.md).
+2. **Custom Actions:** Import [integrations/chatgpt/openapi.yaml](integrations/chatgpt/openapi.yaml) into the GPT Builder Actions tab to allow ChatGPT to call Agent Core API endpoints.
+
+---
+
+## One framework, three integrated parts
 
 ### Part 1: Principles (`references/principles.md`)
 
@@ -105,7 +157,7 @@ A structured workflow designed for complex or multi-step engineering tasks:
 Understand -> Inspect -> Define Success -> Plan -> Execute -> Checkpoint -> Validate -> Complete
 ```
 
-Key practices defined in this phase:
+Key practices:
 * **Pre-flight inspection:** Review dependencies, file layouts, and configuration before editing.
 * **Checkpoints:** Create recoverable points (commits, stashes, or file backups) before risky or destructive operations.
 * **Continuous validation:** Test milestones as they are completed rather than deferring all validation to the end.
@@ -119,7 +171,7 @@ An active audit cycle to prove results before declaring completion:
 Requirements -> Inspect Actual Result -> Find Issues -> Fix -> Verify -> Re-audit -> Report
 ```
 
-Key practices defined in this phase:
+Key practices:
 * **Active error search:** Instead of seeking confirmation bias, the agent actively looks for broken edge cases, missing requirements, regressions, and unintended file edits.
 * **Fix and re-audit:** When a defect is resolved, the agent re-audits related components to ensure the fix did not introduce secondary regressions.
 * **Circuit breaker:** If an issue remains unresolved after three corrective cycles, the agent stops and reports the blockers to the user instead of spinning indefinitely.
@@ -146,48 +198,6 @@ When reporting completion, outcomes must be classified into one of four states:
 | `UNVERIFIED` | Tooling or context was insufficient to confirm the result. |
 
 Uncertainty or lack of test tooling must be reported as `UNVERIFIED`, never promoted to `PASS`.
-
-## Manual adoption
-
-If you prefer manual setup rather than the one-line installer:
-
-### Claude Code
-
-Copy the skill to your project or global Claude skills folder:
-
-```bash
-cp -r skills/agent-core ~/.claude/skills/
-```
-
-Or reference it directly from your `CLAUDE.md`:
-
-```markdown
-# Agent Guidelines
-Follow the agent-core skill workflow defined in skills/agent-core/SKILL.md.
-```
-
-### Antigravity and Gemini CLI
-
-Install the skill into your Gemini skills configuration:
-
-```powershell
-Copy-Item -Recurse skills/agent-core ~/.gemini/config/skills/
-```
-
-### Cursor
-
-Add Agent Core to your `.cursorrules` or `.cursor/rules/agent-core.mdc`:
-
-```markdown
-Apply the agent-core framework from skills/agent-core/SKILL.md for all tasks:
-1. Follow Part 1 (Principles) for code modifications.
-2. Follow Part 2 (Execution) for multi-step planning.
-3. Follow Part 3 (Verification) before declaring completion.
-```
-
-### ChatGPT and custom agent pipelines
-
-Include `skills/agent-core/SKILL.md` as the core operational prompt in your system instructions or agent runtime context.
 
 ## License
 
