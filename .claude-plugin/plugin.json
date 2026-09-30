@@ -1,0 +1,15 @@
+{
+  "name": "agent-core",
+  "version": "1.0.0",
+  "description": "Universal behavioral and execution framework for AI agents to think before acting, make surgical changes, and verify results with evidence.",
+  "author": {
+    "name": "Hoang Chiem Nguyen",
+    "email": "nguyenxp3n@users.noreply.github.com"
+  },
+  "homepage": "https://github.com/nguyenxp3n/agent-core",
+  "repository": "https://github.com/nguyenxp3n/agent-core",
+  "license": "MIT",
+  "skills": [
+    "skills/agent-core"
+  ]
+}

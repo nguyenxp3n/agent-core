@@ -38,6 +38,13 @@ jobs:
           test -f mcp/package.json
           test -f integrations/chatgpt/openapi.yaml
           test -f integrations/chatgpt/instructions.md
+          test -f .claude-plugin/marketplace.json
+          test -f .claude-plugin/plugin.json
+          test -f .mcp.json
+
+      - name: Validate JSON manifests
+        run: |
+          python3 -c "import json; json.load(open('.claude-plugin/marketplace.json')); json.load(open('.claude-plugin/plugin.json')); json.load(open('.mcp.json'))"
 
       - name: Validate MCP server syntax
         run: |
