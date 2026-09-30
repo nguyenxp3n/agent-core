@@ -126,11 +126,12 @@ echo ""
 echo "Installing agent-core skill to ${#SELECTED_IDS[@]} target(s)..."
 echo ""
 
-# Check if local files exist
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd || echo "")"
 LOCAL_SOURCE=false
-if [ -n "$SCRIPT_DIR" ] && [ -f "$SCRIPT_DIR/skills/agent-core/SKILL.md" ]; then
-  LOCAL_SOURCE=true
+if [ -n "${BASH_SOURCE[0]}" ] && [ -f "${BASH_SOURCE[0]}" ]; then
+  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd || echo "")"
+  if [ -n "$SCRIPT_DIR" ] && [ -f "$SCRIPT_DIR/skills/agent-core/SKILL.md" ]; then
+    LOCAL_SOURCE=true
+  fi
 fi
 
 for id in "${SELECTED_IDS[@]}"; do

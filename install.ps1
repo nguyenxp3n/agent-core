@@ -126,9 +126,12 @@ Write-Host "Installing agent-core skill to $($selectedIds.Count) target(s)..." -
 Write-Host ""
 
 $localSource = $false
-$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path -ErrorAction SilentlyContinue
-if ($scriptDir -and (Test-Path (Join-Path $scriptDir "skills\agent-core\SKILL.md"))) {
-    $localSource = $true
+$scriptDir = $null
+if ($MyInvocation -and $MyInvocation.MyCommand -and $MyInvocation.MyCommand.Path) {
+    $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path -ErrorAction SilentlyContinue
+    if ($scriptDir -and (Test-Path (Join-Path $scriptDir "skills\agent-core\SKILL.md"))) {
+        $localSource = $true
+    }
 }
 
 foreach ($id in $selectedIds) {
